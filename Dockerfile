@@ -1,4 +1,4 @@
-FROM sonatype/nexus3:3.8.0
+FROM sonatype/nexus3:3.12.1
 
 ENV RCLONE_VERSION=1.39
 
