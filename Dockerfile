@@ -1,6 +1,7 @@
-FROM maven:3-jdk-8 AS build
+# plugin: composer
+FROM maven:3-jdk-8 AS build-composer
 
-ARG NEXUS_VERSION=3.18.1
+ARG NEXUS_VERSION=3.19.1
 ARG NEXUS_BUILD=01
 
 RUN apt-get update -y \
@@ -10,9 +11,17 @@ RUN apt-get update -y \
   && sed -i "s/3.13.0-01/${NEXUS_VERSION}-${NEXUS_BUILD}/g" pom.xml \
   && mvn clean package
 
-FROM sonatype/nexus3:3.18.1
+# plugin: hazelcast
+FROM maven:3-jdk-8 AS build-hazelcast
 
-ARG NEXUS_VERSION=3.18.1
+ARG HAZELCAST_VERSION=1.2.2
+
+RUN mvn dependency:get -Dartifact=com.hazelcast:hazelcast-kubernetes:${HAZELCAST_VERSION}
+
+# app
+FROM sonatype/nexus3:3.19.1
+
+ARG NEXUS_VERSION=3.19.1
 ARG NEXUS_BUILD=01
 
 ENV RCLONE_VERSION=1.47.0
@@ -28,12 +37,19 @@ RUN yum update -y \
 
 RUN pip3 install --upgrade awscli
 
+# composer
 ARG COMPOSER_VERSION=0.0.2
 ARG COMPOSER_DIR=/opt/sonatype/nexus/system/org/sonatype/nexus/plugins/nexus-repository-composer/${COMPOSER_VERSION}/
 
 RUN mkdir -p ${COMPOSER_DIR}; \
     sed -i 's@nexus-repository-maven</feature>@nexus-repository-maven</feature>\n        <feature prerequisite="false" dependency="false" version="0.0.2">nexus-repository-composer</feature>@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml; \
     sed -i 's@<feature name="nexus-repository-maven"@<feature name="nexus-repository-composer" description="org.sonatype.nexus.plugins:nexus-repository-composer" version="0.0.2">\n        <details>org.sonatype.nexus.plugins:nexus-repository-composer</details>\n        <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-composer/0.0.2</bundle>\n    </feature>\n    <feature name="nexus-repository-maven"@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml;
-COPY --from=build /nexus-repository-composer/target/nexus-repository-composer-${COMPOSER_VERSION}.jar ${COMPOSER_DIR}
+
+COPY --from=build-composer /nexus-repository-composer/target/nexus-repository-composer-${COMPOSER_VERSION}.jar ${COMPOSER_DIR}
+
+ENV HAZELCAST_VERSION=1.2.2
+
+COPY --from=build-hazelcast /root/.m2/repository/com/hazelcast/hazelcast-kubernetes/${HAZELCAST_VERSION}/hazelcast-kubernetes-${HAZELCAST_VERSION}.jar /opt/sonatype/nexus/system/com/hazelcast/hazelcast-kubernetes/${HAZELCAST_VERSION}/hazelcast-kubernetes-${HAZELCAST_VERSION}.jar
+COPY ./hazelcast-network.xml /opt/sonatype/nexus/etc/fabric/hazelcast-network.xml
 
 USER nexus
