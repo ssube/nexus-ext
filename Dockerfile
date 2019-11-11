@@ -1,6 +1,6 @@
 FROM maven:3-jdk-8 AS build
 
-ARG NEXUS_VERSION=3.18.1
+ARG NEXUS_VERSION=3.19.1
 ARG NEXUS_BUILD=01
 
 RUN apt-get update -y \
@@ -10,9 +10,9 @@ RUN apt-get update -y \
   && sed -i "s/3.13.0-01/${NEXUS_VERSION}-${NEXUS_BUILD}/g" pom.xml \
   && mvn clean package
 
-FROM sonatype/nexus3:3.18.1
+FROM sonatype/nexus3:3.19.1
 
-ARG NEXUS_VERSION=3.18.1
+ARG NEXUS_VERSION=3.19.1
 ARG NEXUS_BUILD=01
 
 ENV RCLONE_VERSION=1.47.0
