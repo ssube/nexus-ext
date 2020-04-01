@@ -7,8 +7,8 @@ RUN apt-get update -y \
   && apt-get install -y git \
   && git clone https://github.com/sonatype-nexus-community/nexus-repository-composer.git /nexus-repository-composer/ \
   && cd /nexus-repository-composer/ \
-  && sed -i "s/3.13.0-01/${NEXUS_VERSION}-${NEXUS_BUILD}/g" pom.xml \
-  && mvn clean package
+  && sed -i "s/3.19.1-01/${NEXUS_VERSION}-${NEXUS_BUILD}/g" pom.xml \
+  && mvn clean package -PbuildKar;
 
 FROM sonatype/nexus3:3.21.2
 
@@ -28,12 +28,6 @@ RUN yum update -y \
 
 RUN pip3 install --upgrade awscli
 
-ARG COMPOSER_VERSION=0.0.5
-ARG COMPOSER_DIR=/opt/sonatype/nexus/system/org/sonatype/nexus/plugins/nexus-repository-composer/${COMPOSER_VERSION}/
-
-RUN mkdir -p ${COMPOSER_DIR}; \
-    sed -i 's@nexus-repository-maven</feature>@nexus-repository-maven</feature>\n        <feature prerequisite="false" dependency="false" version="0.0.5">nexus-repository-composer</feature>@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml; \
-    sed -i 's@<feature name="nexus-repository-maven"@<feature name="nexus-repository-composer" description="org.sonatype.nexus.plugins:nexus-repository-composer" version="0.0.5">\n        <details>org.sonatype.nexus.plugins:nexus-repository-composer</details>\n        <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-composer/0.0.5</bundle>\n    </feature>\n    <feature name="nexus-repository-maven"@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml;
-COPY --from=build /nexus-repository-composer/nexus-repository-composer/target/nexus-repository-composer-${COMPOSER_VERSION}-SNAPSHOT.jar ${COMPOSER_DIR}
+COPY --from=build /nexus-repository-composer/nexus-repository-composer/target/nexus-repository-composer-*-bundle.kar /opt/sonatype/nexus/deploy/
 
 USER nexus
