@@ -1,7 +1,7 @@
 FROM maven:3-jdk-8 AS build
 
 ARG NEXUS_VERSION=3.21.2
-ARG NEXUS_BUILD=01
+ARG NEXUS_BUILD=03
 
 RUN apt-get update -y \
   && apt-get install -y git \
@@ -13,7 +13,7 @@ RUN apt-get update -y \
 FROM sonatype/nexus3:3.21.2
 
 ARG NEXUS_VERSION=3.21.2
-ARG NEXUS_BUILD=01
+ARG NEXUS_BUILD=03
 
 ENV RCLONE_VERSION=1.47.0
 
@@ -28,12 +28,12 @@ RUN yum update -y \
 
 RUN pip3 install --upgrade awscli
 
-ARG COMPOSER_VERSION=0.0.2
+ARG COMPOSER_VERSION=0.0.5
 ARG COMPOSER_DIR=/opt/sonatype/nexus/system/org/sonatype/nexus/plugins/nexus-repository-composer/${COMPOSER_VERSION}/
 
 RUN mkdir -p ${COMPOSER_DIR}; \
-    sed -i 's@nexus-repository-maven</feature>@nexus-repository-maven</feature>\n        <feature prerequisite="false" dependency="false" version="0.0.2">nexus-repository-composer</feature>@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml; \
-    sed -i 's@<feature name="nexus-repository-maven"@<feature name="nexus-repository-composer" description="org.sonatype.nexus.plugins:nexus-repository-composer" version="0.0.2">\n        <details>org.sonatype.nexus.plugins:nexus-repository-composer</details>\n        <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-composer/0.0.2</bundle>\n    </feature>\n    <feature name="nexus-repository-maven"@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml;
-COPY --from=build /nexus-repository-composer/nexus-repository-composer/target/nexus-repository-composer-${COMPOSER_VERSION}.jar ${COMPOSER_DIR}
+    sed -i 's@nexus-repository-maven</feature>@nexus-repository-maven</feature>\n        <feature prerequisite="false" dependency="false" version="0.0.5">nexus-repository-composer</feature>@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml; \
+    sed -i 's@<feature name="nexus-repository-maven"@<feature name="nexus-repository-composer" description="org.sonatype.nexus.plugins:nexus-repository-composer" version="0.0.5">\n        <details>org.sonatype.nexus.plugins:nexus-repository-composer</details>\n        <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-composer/0.0.5</bundle>\n    </feature>\n    <feature name="nexus-repository-maven"@g' /opt/sonatype/nexus/system/org/sonatype/nexus/assemblies/nexus-core-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-core-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml;
+COPY --from=build /nexus-repository-composer/nexus-repository-composer/target/nexus-repository-composer-${COMPOSER_VERSION}-SNAPSHOT.jar ${COMPOSER_DIR}
 
 USER nexus
